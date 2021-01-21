@@ -92,6 +92,8 @@ class ColleagueConnection(object):
         else:
             qry_cols = '*' if cols == [] else ', '.join([f"[{c}]" for c in cols])
 
+        # qry_meta_where_cols = '' if cols == [] else "AND COLUMN_NAME IN (" & ', '.join([f"'{c}'" for c in cols]) & ')'
+
         if where != "":
             qry_where_base = where
 
@@ -104,9 +106,10 @@ class ColleagueConnection(object):
             for f in re.findall(r"\[('.*?')\]",qry_where_base):
                 qry_where_base = qry_where_base.replace(f"[{f}]",f"{f}")
 
-            # Convert VAR.NAME into [VAR.NAME]
-            for f in re.findall(r"[^[](\w*\.(?:\w+\.?)+)",qry_where_base):
-                qry_where_base = qry_where_base.replace(f,f"[{f}]")
+            # Find any VAR.NAME type variables but also find [VAR.NAME].
+            # Convert VAR.NAME into [VAR.NAME] and leave the others alone.
+            for f in re.findall(r"(\[?\w*\.[\w\.]+\]?)",qry_where_base):
+                qry_where_base = qry_where_base if f[0] == '[' else qry_where_base.replace(f,f"[{f}]")
 
             # Convert all double-quotes (") to single-quotes (')
             qry_where_base = qry_where_base.replace('"','"')
@@ -130,6 +133,33 @@ class ColleagueConnection(object):
         if debug == "query":
             print(qry)
         
+        # Check for existence in global cache
+        # if self.__cache__[f"{schema}.{colleaguefile}"]:
+        #     df_meta = self.__cache__[f"{schema}.{colleaguefile}"]
+        # else:
+        qry_meta = f"""
+            SELECT TABLE_SCHEMA
+                 , TABLE_NAME
+                 , COLUMN_NAME
+                 , DATA_TYPE
+                 , CASE WHEN DATA_TYPE IN ('bigint','float','real','numeric','decimal','money','smallmoney') THEN 'float'
+                        WHEN DATA_TYPE IN ('binary','varbinary','image') THEN 'bytes'
+                        WHEN DATA_TYPE IN ('bit') THEN 'bool'
+                        WHEN DATA_TYPE IN ('date','datetime','smalldatatime','time','datetime2') THEN 'datatime'
+                        WHEN DATA_TYPE IN ('smallint','tinyint','int') THEN 'int'
+                        ELSE 'str' END AS PYTHON_DATA_TYPE 
+              FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = '{schema}'
+               AND TABLE_NAME = '{colleaguefile}'
+            """
+        df_meta = pd.read_sql(qry_meta, self.__engine__)
+        # cache table column types
+
+        if isinstance(cols,collections.abc.Mapping):
+            df_meta = df_meta.rename( cols )
+
+        df_types = df_meta[["COLUMN_NAME","PYTHON_DATA_TYPE"]].to_dict()
+
         df = pd.read_sql(qry, self.__engine__)
 
         return(df)
@@ -239,6 +269,23 @@ class ColleagueConnection(object):
             df.columns = df.columns.str.replace(".", sep)
 
         return df
+
+    def get_data_sql(self, sql_code: str, debug: str = ""):
+        '''
+        Get data from Colleague data warehouse. 
+        
+        Parameters:
+            sql_code:       The SQL code to execute. Must be connected to CCDW.
+            debug (str):    Default="". Specify the debug level. Valid debug levels:
+                            query: print out the generated query
+        '''
+        newline = '\n'
+        if self.__source__ == "ccdw":
+            if debug == "query":
+                print(f"SQL:{newline}{sql_code}")
+            return self.__engine__.execute(sql_code)
+        else:
+            pass 
 
     def School_ID(self):
         """Return the school's InstID from the config file."""
