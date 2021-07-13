@@ -86,7 +86,7 @@ class ColleagueConnection(object):
             else:
                 self.__sourcepath__ = "."
 
-    def __get_data_ccdw__(self, colleaguefile: str,  cols: Union[dict,list] = [], where: str = "", schema: str = "history", version: str = "current", debug: str = "" ):
+    def __get_data_ccdw__(self, colleaguefile: str,  cols: Union[dict,list] = [], where: str = "", schema: str = "history", version: str = "current", index_col: bool = False, debug: str = "" ):
         if isinstance(cols,collections.abc.Mapping):
             qry_cols = '*' if cols == [] else ', '.join([f"[{c}] AS [{cols[c]}]" for c in cols])
         else:
@@ -160,7 +160,7 @@ class ColleagueConnection(object):
 
         df_types = df_meta[["COLUMN_NAME","PYTHON_DATA_TYPE"]].to_dict()
 
-        df = pd.read_sql(qry, self.__engine__)
+        df = pd.read_sql(qry, self.__engine__, index_col = index_col)
 
         return(df)
 
@@ -176,10 +176,10 @@ class ColleagueConnection(object):
 
         return res
 
-    def __get_data_datamart__(self, colleaguefile: str,  cols: Union[dict,list] = [], where: str = "", debug: str = "" ):
+    def __get_data_datamart__(self, colleaguefile: str,  cols: Union[dict,list] = [], where: str = "", index_col: bool = False, debug: str = "" ):
         pass
 
-    def __get_data_file__(self, colleaguefile: str,  cols: Union[dict,list] = [], where: str = "", debug: str = "" ):
+    def __get_data_file__(self, colleaguefile: str,  cols: Union[dict,list] = [], where: str = "", index_col: bool = False, debug: str = "" ):
         if isinstance(cols,collections.abc.Mapping):
             qry_cols = '*' if cols == [] else [c for c in cols]
             qry_cols_equiv = '*' if cols == [] else ', '.join([f"[{c}] AS [{cols[c]}]" for c in cols])
@@ -232,6 +232,7 @@ class ColleagueConnection(object):
                  sep: str = '.', 
                  schema: str = "history", 
                  version: str = "current", 
+                 index_col: bool = False, 
                  debug: str = "" ):
         '''
         Get data from Colleague data warehouse. 
