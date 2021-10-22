@@ -160,7 +160,7 @@ class ColleagueConnection(object):
 
         df_types = df_meta[["COLUMN_NAME","PYTHON_DATA_TYPE"]].to_dict()
 
-        df = pd.read_sql(qry, self.__engine__, index_col = index_col)
+        df = pd.read_sql(qry, self.__engine__) #, index_col = index_col)
 
         return(df)
 
@@ -232,7 +232,7 @@ class ColleagueConnection(object):
                  sep: str = '.', 
                  schema: str = "history", 
                  version: str = "current", 
-                 index_col: bool = False, 
+                 #index_col: bool = False, 
                  debug: str = "" ):
         '''
         Get data from Colleague data warehouse. 
@@ -257,7 +257,7 @@ class ColleagueConnection(object):
                                     query: print out the generated query
         '''
         if self.__source__ == "ccdw":
-            df = self.__get_data_ccdw__(colleaguefile, cols=cols, where=where, schema=schema, version=version, index_col=index_col, debug=debug)
+            df = self.__get_data_ccdw__(colleaguefile, cols=cols, where=where, schema=schema, version=version, debug=debug)
         # elif self.__source__ == "datamart":
         #     df = self.__get_data_datamart__(colleaguefile, cols, where, debug)
         elif self.__source__ == "file":
