@@ -257,11 +257,11 @@ class ColleagueConnection(object):
                                     query: print out the generated query
         '''
         if self.__source__ == "ccdw":
-            df = self.__get_data_ccdw__(colleaguefile, cols, where, schema, version, debug)
+            df = self.__get_data_ccdw__(colleaguefile, cols=cols, where=where, schema=schema, version=version, index_col=index_col, debug=debug)
         # elif self.__source__ == "datamart":
         #     df = self.__get_data_datamart__(colleaguefile, cols, where, debug)
         elif self.__source__ == "file":
-            df = self.__get_data_file__(colleaguefile, cols, where, debug)
+            df = self.__get_data_file__(colleaguefile, cols=cols, where=where, debug=debug)
         else:
             # Raise error
             return None 
@@ -306,9 +306,9 @@ if __name__ == "__main__":
     print( ccdw_conn.get_data(
                 "Term_CU", 
                 schema="dw_dim",
-                version="all", 
+#                version="all", 
                 cols=["Term_ID", "Academic_Year", "Reporting_Year", "Term_Start_Date", "Term_End_Date"], 
-                where=f"[Term_ID] in {report_terms}"
+                where=f"[Term_ID] IN {report_terms}"
                 , debug = "query"
             )
     )
@@ -336,3 +336,4 @@ if __name__ == "__main__":
                 , debug = "query"
                 )
     )
+
