@@ -7,6 +7,7 @@ import pandas as pd
 from pathlib import Path
 import re
 import sqlalchemy
+import sys
 import urllib
 import yaml
 from typing import Union
@@ -33,17 +34,35 @@ class ColleagueConnection(object):
             config (dictionary):    Default=None. Pass in the config file or the constructor will load the 
                                     config file itself. 
         '''
+        dflt_cfg_path = Path(".")
+        dflt_cfg_fn = "config.yml"
+        dflt_cfg_full_path = Path(dflt_cfg_path / dflt_cfg_fn)
+
         if config:
             self.__config__ = config.copy()
         else:
-            with open("config.yml","r") as ymlfile:
-                cfg_l = yaml.load(ymlfile, Loader=yaml.FullLoader)
-
-                if cfg_l["config"]["location"] == "self":
-                    self.__config__ = cfg_l.copy()
+            # HAYWOODCC_CFG_FULL_PATH, HAYWOODCC_CFG_FN, HAYWOODCC_CFG_PATH
+            try:
+                if os.path.exists(dflt_cfg_full_path):
+                    config_path = dflt_cfg_full_path
+                elif os.environ["HAYWOODCC_CFG_FULL_PATH"]:
+                        config_path = os.environ["HAYWOODCC_CFG_FULL_PATH"]
                 else:
-                    with open(cfg_l["config"]["location"] + "config.yml","r") as ymlfile2:
-                        self.__config__ = yaml.load(ymlfile2, Loader=yaml.FullLoader)
+                    env_cfg_path = os.environ["HAYWOODCC_CFG_PATH"] or dflt_cfg_path
+                    env_cfg_fn = os.environ["HAYWOODCC_CFG_FN"] or dflt_cfg_fn
+                    config_path = Path(env_cfg_path / env_cfg_fn)
+
+                with open(config_path,"r") as ymlfile:
+                    cfg_l = yaml.load(ymlfile, Loader=yaml.FullLoader)
+
+                    if cfg_l["config"]["location"] == "self":
+                        self.__config__ = cfg_l.copy()
+                    else:
+                        with open(cfg_l["config"]["location"] + dflt_cfg_fn,"r") as ymlfile2:
+                            self.__config__ = yaml.load(ymlfile2, Loader=yaml.FullLoader)
+            except:
+                print("Error getting config file")
+                sys.exit(1)
 
         if source:
             self.__source__ = source.lower()
