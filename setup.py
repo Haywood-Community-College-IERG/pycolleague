@@ -11,6 +11,9 @@ setup(name='pycolleague',
       install_requires=[
             'sqlalchemy',
             'pyodbc',
-            'pyyaml'
+            'pyyaml',
+            'python-dotenv',
+            'pandas',
+            'pydantic',
       ],
       zip_safe=False)
