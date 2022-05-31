@@ -4,16 +4,17 @@ import collections.abc
 import glob
 import os
 import re
-import sys
 import urllib
 from pathlib import Path
 from typing import Union
 
 import pandas as pd
 import sqlalchemy
-from config import Settings
 
-# import .config as cfg
+from .config import Settings
+
+# from config import Settings
+# import .config as cfg # Did not work
 
 
 class ColleagueError(Exception):
