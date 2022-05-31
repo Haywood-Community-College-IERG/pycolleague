@@ -1,3 +1,19 @@
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta:__legacy__"
+requires = ["setuptools", "wheel", "toml"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pycolleague"
+version = "0.1.5"
+dependencies = [
+    "sqlalchemy",
+    "pyodbc",
+    "pyyaml",
+    "python-dotenv",
+    "pandas",
+    "pydantic",
+]
+description = "A module for accessing data exported from Colleague SIS. Includes the ability to work with data exported as CSVs or data imported into the SAS Data Mart or CCDW database"
+readme = "README.md"
+authors = [{ name = "David Onder", email = "donder@haywood.edu" }]
+license = {file = "LICENSE"}
