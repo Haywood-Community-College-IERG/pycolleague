@@ -9,9 +9,12 @@ import urllib
 from pathlib import Path
 from typing import Union
 
-import config as cfg
 import pandas as pd
 import sqlalchemy
+
+import .config as cfg
+
+#from config import Settings
 
 
 class ColleagueError(Exception):
@@ -41,7 +44,7 @@ class ColleagueConnection(object):
         if config:
             self.__config__ = config.copy()
         else:
-            self.__config__ = cfg.Settings().dict()
+            self.__config__ = Settings().dict()
 
         if source:
             self.__source__ = source.lower()
