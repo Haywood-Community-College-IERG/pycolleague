@@ -11,10 +11,9 @@ from typing import Union
 
 import pandas as pd
 import sqlalchemy
+from config import Settings
 
-import .config as cfg
-
-#from config import Settings
+# import .config as cfg
 
 
 class ColleagueError(Exception):
