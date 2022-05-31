@@ -11,6 +11,7 @@ python-dotenv = "*"
 pyyaml = "*"
 pandas = "*"
 build = "*"
+bump2version = "*"
 
 [dev-packages]
 
