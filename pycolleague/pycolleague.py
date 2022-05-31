@@ -12,9 +12,6 @@ from typing import Union
 import config as cfg
 import pandas as pd
 import sqlalchemy
-import yaml
-
-__version__ = "0.0.5"
 
 
 class ColleagueError(Exception):
