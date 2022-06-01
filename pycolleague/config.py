@@ -151,6 +151,7 @@ class Settings(BaseSettings):
         case_sensitive: bool = False
         arbitrary_types_allowed: bool = True
         validate_all: bool = False
+        extra: str = "ignore"
 
         @classmethod
         def customise_sources(

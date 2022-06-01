@@ -10,11 +10,11 @@ from typing import Union
 import pandas as pd
 import sqlalchemy
 
+# This form works when used as a package, but not locally.
 from pycolleague.config import Settings
 
+# Use this form when used locally.
 # from config import Settings
-# import .config as cfg # Did not work
-# from .config import Settings # Did not work
 
 
 class ColleagueError(Exception):
