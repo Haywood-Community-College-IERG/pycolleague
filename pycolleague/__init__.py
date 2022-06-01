@@ -1,3 +1,6 @@
-from .pycolleague import ColleagueError
-from .pycolleague import ColleagueConfigurationError
-from .pycolleague import ColleagueConnection
+from .config import Settings
+from .pycolleague import (
+    ColleagueConfigurationError,
+    ColleagueConnection,
+    ColleagueError,
+)

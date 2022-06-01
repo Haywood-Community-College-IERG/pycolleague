@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import collections.abc
 import glob
-import os
 import re
 import urllib
 from pathlib import Path
@@ -11,10 +10,11 @@ from typing import Union
 import pandas as pd
 import sqlalchemy
 
-from .config import Settings
+from pycolleague.config import Settings
 
 # from config import Settings
 # import .config as cfg # Did not work
+# from .config import Settings # Did not work
 
 
 class ColleagueError(Exception):
