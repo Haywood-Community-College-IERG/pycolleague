@@ -151,7 +151,7 @@ class Settings(BaseSettings):
         case_sensitive: bool = False
         arbitrary_types_allowed: bool = True
         validate_all: bool = False
-        extra: str = "ignore"
+        extra: str = "allow"
 
         @classmethod
         def customise_sources(
@@ -166,7 +166,9 @@ class Settings(BaseSettings):
                 yml_config_setting,
             )
 
-
+def get_config():
+    return Settings().dict()
+    
 if __name__ == "__main__":
     testdict = Settings().dict()
 
