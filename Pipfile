@@ -6,14 +6,14 @@ name = "pypi"
 [packages]
 sqlalchemy = "*"
 pyodbc = "*"
-pydantic = "*"
-python-dotenv = "*"
 pyyaml = "*"
+python-dotenv = "*"
 pandas = "*"
-build = "*"
-bump2version = "*"
+pydantic = "*"
+pydantic-settings = "*"
 
 [dev-packages]
+bump-pydantic = "*"
 
 [requires]
-python_version = "3.9"
+python_version = "3.11"
