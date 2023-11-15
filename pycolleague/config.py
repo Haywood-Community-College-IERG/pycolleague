@@ -208,6 +208,8 @@ class Settings(BaseSettings, case_sensitive = False):
     ) -> Tuple[PydanticBaseSettingsSource, ...]:
         return init_settings, env_settings, dotenv_settings, yml_config_setting(settings_cls)
 
+def get_config():
+    return Settings().model_dump()
 
 if __name__ == "__main__":
     testdict = Settings().model_dump()
