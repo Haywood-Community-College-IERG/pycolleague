@@ -84,6 +84,7 @@ class yml_config_setting(PydanticBaseSettingsSource):
         return d
 
 class SchoolModel(BaseModel):
+    model_config = SettingsConfigDict(extra="allow")
     name: Optional[str] = ""
     abbrev: Optional[str] = ""
     ipeds: Optional[Union[str,int]] = ""
@@ -97,6 +98,7 @@ class SchoolModel(BaseModel):
 
 
 class SQLModel(BaseModel):
+    model_config = SettingsConfigDict(extra="allow")
     server: Optional[str] = ""
     db: Optional[str] = ""
     driver: Optional[str] = ""
@@ -127,6 +129,7 @@ class SQLModel(BaseModel):
 
 
 class Informer(BaseModel):
+    model_config = SettingsConfigDict(extra="allow")
     export_path: Optional[str] = ""
     export_path_wStatus: Optional[str] = ""
     export_path_meta: Optional[str] = ""
@@ -136,8 +139,10 @@ class Informer(BaseModel):
 
 
 class CCDWModel(BaseModel):
+    model_config = SettingsConfigDict(extra="allow")
     ccdw_path: Optional[str] = ""
     log_path: Optional[str] = ""
+    duckdb_path: Optional[str] = ""
     archive_path: Optional[str] = ""
     archive_path_wStatus: Optional[str] = ""
     invalid_path_wStatus: Optional[str] = ""
@@ -150,6 +155,7 @@ class CCDWModel(BaseModel):
 
 
 class StatusFieldsModel(BaseModel):
+    model_config = SettingsConfigDict(extra="allow")
     ACAD_PROGRAMS: Optional[Union[List[str],str]] = ""
     APPLICATIONS: Optional[Union[List[str],str]] = ""
     COURSES: Optional[Union[List[str],str]] = ""
@@ -160,26 +166,37 @@ class StatusFieldsModel(BaseModel):
 
 
 class PyColleagueModel(BaseModel):
+    model_config = SettingsConfigDict(extra="allow")
     source: Optional[str] = "ccdw"
     sourcepath: Optional[str] = "./input"
 
 
 class DatamartModel(BaseModel):
+    model_config = SettingsConfigDict(extra="allow")
     rootfolder: Optional[str] = ""
 
 
 class RModel(BaseModel):
+    model_config = SettingsConfigDict(extra="allow")
     scripts_path: Optional[str] = ""
 
 
 #class ConfigModel(BaseSettings):
 class CCDWConfigModel(BaseModel):
-    location: Optional[str] = Field(validation_alias="CCDW_CFG_FULL_PATH")
-    location_fn: Optional[str] = Field(validation_alias="CCDW_CFG_FN")
-    location_path: Optional[str] = Field(validation_alias="CCDW_CFG_PATH")
+    model_config = SettingsConfigDict(extra="allow")
+    location: Optional[str] = ""
+    location_fn: Optional[str] = ""
+    location_path: Optional[str] = ""
 
 
 class Settings(BaseSettings, case_sensitive = False):
+    model_config = SettingsConfigDict(
+        env_file = ".env",
+        arbitrary_types_allowed = True,
+        validate_default = False,
+        extra = "allow"
+    )
+
     school: Optional[SchoolModel] = SchoolModel()
     sql: Optional[SQLModel] = SQLModel()
     informer: Optional[Informer] = Informer()
@@ -188,14 +205,7 @@ class Settings(BaseSettings, case_sensitive = False):
     pycolleague: Optional[PyColleagueModel] = PyColleagueModel()
     datamart: Optional[DatamartModel] = DatamartModel()
     R: Optional[RModel] = RModel()
-    #config: Optional[CCDWConfigModel] = CCDWConfigModel()
-
-    model_config = SettingsConfigDict(
-        env_file = ".env",
-        arbitrary_types_allowed = True,
-        validate_default = False,
-        extra = "allow"
-    )
+    config: Optional[CCDWConfigModel] = CCDWConfigModel()
 
     @classmethod
     def settings_customise_sources(

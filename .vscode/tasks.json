@@ -21,15 +21,17 @@
             }
         },
         {
-            "label": "build",
-            "command": "py",
+            "label": "pipenv build",
+            "command": "pipenv",
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
             "args": [
+                "run",
+                "python",
                 "-m",
-                "build"
+                "build",
             ],
             "presentation": {
                 "echo": true,
