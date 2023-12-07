@@ -4,13 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pycolleague"
-version = "0.4.2"
+version = "0.5.0"
 dependencies = [
     "sqlalchemy",
     "pyodbc",
     "pyyaml",
     "python-dotenv",
     "pandas",
+    "polars",
     "pydantic",
     "pydantic_settings",
 ]
