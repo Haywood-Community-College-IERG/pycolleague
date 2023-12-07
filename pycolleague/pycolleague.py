@@ -8,13 +8,18 @@ from pathlib import Path
 from typing import Union
 
 import pandas as pd
+import polars as pl
+
 import sqlalchemy
 
-# This form works when used as a package, but not locally.
-from pycolleague.config import Settings
 
-# Use this form when used locally.
-# from config import Settings
+if __name__ == "__main__":
+    # Use this form when used locally.
+    from config import Settings
+
+else:
+    # This form works when used as a package, but not locally.
+    from pycolleague.config import Settings
 
 
 class ColleagueError(Exception):
@@ -31,20 +36,48 @@ class ColleagueConnection(object):
     """
 
     def __init__(
-        self, source: str = "", sourcepath: str = "", config: dict = None
+        self, 
+        *,
+        source: str = "", 
+        sourcepath: str = "", 
+        format: str = "pandas",
+        lazy: bool = False,
+        config: dict = None
     ) -> None:
         """
         The constructor for ColleagueConnection class.
 
         Parameters:
             source (string):        Specify source of data. Can be ccdw, datamart, or file.
+            sourcepath (string):    Default="". Specify the path to the data source. For ccdw, this is the
+                                    path to the config file. For datamart, this is the root folder for the
+                                    datamart. For file, this is the path to the folder containing the   
+                                    files.
+            format (string):        Default="pandas". Specify the format of the output. This can be
+                                    pandas or polars. If pandas, the output will be a pandas DataFrame.
+                                    If polars, the output will be a polars DataFrame.
+            lazy (bool):            Default=False. Specify whether to load the data lazily or not. If True, 
+                                    the data will not be loaded until the user requests it. If False, the
+                                    data will be loaded immediately.
             config (dictionary):    Default=None. Pass in the config file or the constructor will load the
                                     config file itself.
         """
+
+        if format.lower() == "pandas":
+            self.__format__ = "pandas"
+        elif format.lower() == "polars":
+            self.__format__ = "polars"
+        else:
+            # Raise error
+            pass
+
+        self.__lazy__ = lazy
+        
+
         if config:
             self.__config__ = config.copy()
         else:
-            self.__config__ = Settings().dict()
+            self.__config__ = Settings().model_dump()
 
         if source:
             self.__source__ = source.lower()
@@ -68,10 +101,15 @@ class ColleagueConnection(object):
                 f"Trusted_Connection=Yes;"
                 f"Description=Python ColleagueConnection Class"
             )
-            self.__sourcepath__ = (
-                f"mssql+pyodbc:///?odbc_connect={self.__conn_details__}"
-            )
-            self.__engine__ = sqlalchemy.create_engine(self.__sourcepath__)
+            if format == "pandas":
+                self.__sourcepath__ = (
+                    f"mssql+pyodbc:///?odbc_connect={self.__conn_details__}"
+                )
+                self.__engine__ = sqlalchemy.create_engine(self.__sourcepath__)
+            else:
+                self.__sourcepath__ = f"mssql://{self.__config__['sql']['server']}:1433/{self.__config__['sql']['db']}?trusted_connection=true"
+                # self.__engine__ = sqlalchemy.create_engine(self.__sourcepath__)
+                # mssql://researchvm.haywood.edu:1433/CCDW_HIST?trusted_connection=true
 
             self.__config_schema_history__ = self.__config__["sql"]["schema_history"]
 
@@ -110,8 +148,10 @@ class ColleagueConnection(object):
         schema: str = "history",
         version: str = "current",
         index_col: bool = False,
+        #format: str = "pandas",
+        #lazy: bool = False,
         debug: str = "",
-    ):
+    ) -> (pd.DataFrame, pl.DataFrame, pl.LazyFrame):
         if isinstance(cols, collections.abc.Mapping):
             qry_cols = (
                 "*"
@@ -187,15 +227,24 @@ class ColleagueConnection(object):
              WHERE TABLE_SCHEMA = '{schema}'
                AND TABLE_NAME = '{colleaguefile}'
             """
-        df_meta = pd.read_sql(qry_meta, self.__engine__)
-        # cache table column types
+        if self.__format__ == "pandas":
+            df_meta = pd.read_sql(qry_meta, self.__engine__)
+            # cache table column types
 
-        if isinstance(cols, collections.abc.Mapping):
-            df_meta = df_meta.rename(cols)
+            if isinstance(cols, collections.abc.Mapping):
+                df_meta = df_meta.rename(cols)
 
-        df_types = df_meta[["COLUMN_NAME", "PYTHON_DATA_TYPE"]].to_dict()
+            df_types = df_meta[["COLUMN_NAME", "PYTHON_DATA_TYPE"]].to_dict()
 
-        df = pd.read_sql(qry, self.__engine__)  # , index_col = index_col)
+        if self.__format__ == "pandas":
+            df = pd.read_sql(qry, self.__engine__)  # , index_col = index_col)
+        else:
+            df = pl.read_database_uri(qry, self.__sourcepath__) # , index_col = index_col)
+
+        if self.__lazy__:
+            df = df.lazy()
+            # Need to apply the schema to the lazy frame
+            #df = df.with_column_types(df_types["PYTHON_DATA_TYPE"])
 
         return df
 
@@ -424,3 +473,46 @@ if __name__ == "__main__":
             debug="query",
         )
     )
+
+
+    ccdw_conn_pl = ColleagueConnection(source=testsource, format="polars")
+    print(
+        ccdw_conn_pl.get_data(
+            "Term_CU",
+            schema="dw_dim",
+            #                version="all",
+            cols=[
+                "Term_ID",
+                "Academic_Year",
+                "Reporting_Year",
+                "Term_Start_Date",
+                "Term_End_Date",
+            ],
+            where=f"[Term_ID] IN {report_terms}",
+            debug="query",
+        )
+    )
+
+    ccdw_conn_pll = ColleagueConnection(source=testsource, format="polars", lazy=True)
+    df = (
+        ccdw_conn_pll.get_data(
+            "Term_CU",
+            schema="dw_dim",
+            #                version="all",
+            cols=[
+                "Term_ID",
+                "Academic_Year",
+                "Reporting_Year",
+                "Term_Start_Date",
+                "Term_End_Date",
+            ],
+            where=f"[Term_ID] IN {report_terms}",
+            debug="query",
+        )
+    )
+    print(df.explain)
+    df2 = df.collect()
+    print(df2)
+
+
+    print("done")

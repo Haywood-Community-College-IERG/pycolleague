@@ -11,6 +11,8 @@ python-dotenv = "*"
 pandas = "*"
 pydantic = "*"
 pydantic-settings = "*"
+polars = {extras = ["pyarrow"], version = "*"}
+connectorx = "*"
 
 [dev-packages]
 bump-pydantic = "*"
