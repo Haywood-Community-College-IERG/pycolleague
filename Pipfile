@@ -12,7 +12,12 @@ pandas = "*"
 pydantic = "*"
 pydantic-settings = "*"
 polars = {extras = ["pyarrow"], version = "*"}
+pyodbc = "*"
+python-dotenv = "*"
+pyyaml = "*"
+sqlalchemy = "*"
 connectorx = "*"
+duckdb = "0.9.2"
 
 [dev-packages]
 bump-pydantic = "*"
