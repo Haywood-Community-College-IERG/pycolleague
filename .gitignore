@@ -126,3 +126,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+config.yml
+duckdb_test.db

@@ -44,6 +44,10 @@ class yml_config_setting(PydanticBaseSettingsSource):
             else:
                 config_file = os.path.join(".", "config.yml")
 
+            # if config_file starts with ~, replace with home directory
+            if config_file.startswith("~"):
+                config_file = os.path.expanduser(config_file)
+
             if exists(config_file):
                 with open(config_file, "r") as f:
                     config_dict = yaml.safe_load(f)
@@ -154,6 +158,17 @@ class CCDWModel(BaseModel):
     new_fields_fn: Optional[str] = ""
 
 
+class DuckDBModel(BaseModel):
+    model_config = SettingsConfigDict(extra="allow")
+    path: Optional[str] = ""
+    read_only: Optional[bool] = True
+
+
+class FileModel(BaseModel):
+    model_config = SettingsConfigDict(extra="allow")
+    path: Optional[str] = ""
+
+    
 class StatusFieldsModel(BaseModel):
     model_config = SettingsConfigDict(extra="allow")
     ACAD_PROGRAMS: Optional[Union[List[str],str]] = ""
@@ -165,10 +180,10 @@ class StatusFieldsModel(BaseModel):
     XCC_ACAD_PROGRAM_REQMTS: Optional[Union[List[str],str]] = ""
 
 
-class PyColleagueModel(BaseModel):
-    model_config = SettingsConfigDict(extra="allow")
-    source: Optional[str] = "ccdw"
-    sourcepath: Optional[str] = "./input"
+# class PyColleagueModel(BaseModel):
+#     model_config = SettingsConfigDict(extra="allow")
+#     source: Optional[str] = "ccdw"
+#     sourcepath: Optional[str] = "./input"
 
 
 class DatamartModel(BaseModel):
@@ -187,11 +202,16 @@ class CCDWConfigModel(BaseModel):
     location: Optional[str] = ""
     location_fn: Optional[str] = ""
     location_path: Optional[str] = ""
+#    location_duckdb: Optional[str] = "."
+    source: Optional[str] = "ccdw"
+    read_only: Optional[bool] = True
 
 
 class Settings(BaseSettings, case_sensitive = False):
     model_config = SettingsConfigDict(
         env_file = ".env",
+        env_prefix = "CCDW_CFG__",
+        env_nested_delimiter = "__",
         arbitrary_types_allowed = True,
         validate_default = False,
         extra = "allow"
@@ -201,8 +221,10 @@ class Settings(BaseSettings, case_sensitive = False):
     sql: Optional[SQLModel] = SQLModel()
     informer: Optional[Informer] = Informer()
     ccdw: Optional[CCDWModel] = CCDWModel()
+    duckdb: Optional[DuckDBModel] = DuckDBModel()
+    file: Optional[FileModel] = FileModel()
     status_fields: Optional[StatusFieldsModel] = StatusFieldsModel()
-    pycolleague: Optional[PyColleagueModel] = PyColleagueModel()
+    #pycolleague: Optional[PyColleagueModel] = PyColleagueModel()
     datamart: Optional[DatamartModel] = DatamartModel()
     R: Optional[RModel] = RModel()
     config: Optional[CCDWConfigModel] = CCDWConfigModel()
@@ -223,6 +245,14 @@ def get_config():
 
 if __name__ == "__main__":
     testdict = Settings().model_dump()
+    tab = "\t"
+    def pretty(d, indent=0):
+        for key, value in d.items():
+            if isinstance(value, dict):
+                print(f"{tab * indent}{str(key)}:")
+                pretty(value, indent + 1)
+            else:
+                print(f"{tab * indent}{str(key)}: {str(value)}")
 
-    print(testdict)
+    pretty(testdict)
     print("Done")
