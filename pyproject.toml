@@ -4,17 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pycolleague"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
     "connectorx",
     "duckdb",
-    "pyodbc",
-    "pyyaml",
-    "python-dotenv",
     "pandas",
     "polars",
     "pydantic",
     "pydantic_settings",
+    "pyodbc",
+    "python-dotenv",
+    "pyyaml",
     "sqlalchemy",
 ]
 description = "A module for accessing data exported from Colleague SIS. Includes the ability to work with data exported as CSVs or data imported into the SAS Data Mart or CCDW database"

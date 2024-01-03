@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import collections.abc
 import glob
-from os import read
-from pipes import quote
 import re
 import urllib
 from pathlib import Path
@@ -81,7 +79,7 @@ class ColleagueConnection(object):
         """
 
         if format.lower() == "pandas":
-            self.__dfformat__ = "pandas"
+            self.__df_format__ = "pandas"
         elif format.lower() == "polars":
             self.__df_format__ = "polars"
         else:
@@ -271,53 +269,54 @@ class ColleagueConnection(object):
         if debug == "query":
             print(qry)
 
-        if self.__source__ == "duckdb":
-            qry_meta = f"""
-                SELECT COLUMN_NAME AS "COLUMN_NAME"
-                     , DATA_TYPE AS "DATA_TYPE"
-                     , CASE WHEN DATA_TYPE IN ('FLOAT','FLOAT4','FLOAT8','REAL','NUMERIC','DECIMAL','DOUBLE') THEN 'float'
-                            WHEN DATA_TYPE IN ('BLOB','BINARY','BYTEA','VARBINARY') THEN 'bytes'
-                            WHEN DATA_TYPE IN ('BIT','BITSTRING','LOGICAL','BOOL') THEN 'bool'
-                            WHEN DATA_TYPE IN ('DATE','DATETIME','TIME','DATETIME2','TIMESTAMP','TIMESTAMP WITH TIME ZONE','TIMESTAMPZ','TIMESTAMP_NS') THEN 'datetime'
-                            WHEN DATA_TYPE IN ('BIGINT','INT1','INT2','INT4','INT8','LONG','HUGEINT','SIGNED','SHORT','SMALLINT','TINYINT','INT',
-                                               'UBIGINT','UINTEGER','USMALLINT','UTINYINT') THEN 'int'
-                            ELSE 'str' END AS PYTHON_DATA_TYPE
-                  FROM duckdb_columns()
-                 WHERE SCHEMA_NAME = '{schema}'
-                   AND TABLE_NAME = '{colleaguefile}'
-                   {qry_meta_where_cols}
-                """
-        else:
-            qry_meta = f"""
-                SELECT TABLE_SCHEMA
-                     , TABLE_NAME
-                     , COLUMN_NAME
-                     , DATA_TYPE
-                     , CASE WHEN DATA_TYPE IN ('bigint','float','real','numeric','decimal','money','smallmoney') THEN 'float'
-                            WHEN DATA_TYPE IN ('binary','varbinary','image') THEN 'bytes'
-                            WHEN DATA_TYPE IN ('bit') THEN 'bool'
-                            WHEN DATA_TYPE IN ('date','datetime','smalldatatime','time','datetime2') THEN 'datatime'
-                            WHEN DATA_TYPE IN ('smallint','tinyint','int') THEN 'int'
-                            ELSE 'str' END AS PYTHON_DATA_TYPE 
-                  FROM INFORMATION_SCHEMA.COLUMNS
-                 WHERE TABLE_SCHEMA = '{schema}'
-                   AND TABLE_NAME = '{colleaguefile}'
-                   {qry_meta_where_cols}
-                """
-            
-        if self.__source__ == "duckdb":
-            df_meta = self.__engine__.sql(qry_meta).df()
-        elif self.__source__ == "ccdw":
-            df_meta = pd.read_sql(qry_meta, self.__engine__)
-        else:
-            # Raise error
-            df_meta = None
-        # cache table column types
+        if schema.upper() != "INFORMATION_SCHEMA":
+            if self.__source__ == "duckdb":
+                qry_meta = f"""
+                    SELECT COLUMN_NAME AS "COLUMN_NAME"
+                        , DATA_TYPE AS "DATA_TYPE"
+                        , CASE WHEN DATA_TYPE IN ('FLOAT','FLOAT4','FLOAT8','REAL','NUMERIC','DECIMAL','DOUBLE') THEN 'float'
+                                WHEN DATA_TYPE IN ('BLOB','BINARY','BYTEA','VARBINARY') THEN 'bytes'
+                                WHEN DATA_TYPE IN ('BIT','BITSTRING','LOGICAL','BOOL') THEN 'bool'
+                                WHEN DATA_TYPE IN ('DATE','DATETIME','TIME','DATETIME2','TIMESTAMP','TIMESTAMP WITH TIME ZONE','TIMESTAMPZ','TIMESTAMP_NS') THEN 'datetime'
+                                WHEN DATA_TYPE IN ('BIGINT','INT1','INT2','INT4','INT8','LONG','HUGEINT','SIGNED','SHORT','SMALLINT','TINYINT','INT',
+                                                'UBIGINT','UINTEGER','USMALLINT','UTINYINT') THEN 'int'
+                                ELSE 'str' END AS PYTHON_DATA_TYPE
+                    FROM duckdb_columns()
+                    WHERE SCHEMA_NAME = '{schema}'
+                    AND TABLE_NAME = '{colleaguefile}'
+                    {qry_meta_where_cols}
+                    """
+            else:
+                qry_meta = f"""
+                    SELECT TABLE_SCHEMA
+                        , TABLE_NAME
+                        , COLUMN_NAME
+                        , DATA_TYPE
+                        , CASE WHEN DATA_TYPE IN ('bigint','float','real','numeric','decimal','money','smallmoney') THEN 'float'
+                                WHEN DATA_TYPE IN ('binary','varbinary','image') THEN 'bytes'
+                                WHEN DATA_TYPE IN ('bit') THEN 'bool'
+                                WHEN DATA_TYPE IN ('date','datetime','smalldatatime','time','datetime2') THEN 'datatime'
+                                WHEN DATA_TYPE IN ('smallint','tinyint','int') THEN 'int'
+                                ELSE 'str' END AS PYTHON_DATA_TYPE 
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = '{schema}'
+                    AND TABLE_NAME = '{colleaguefile}'
+                    {qry_meta_where_cols}
+                    """
+                
+            if self.__source__ == "duckdb":
+                df_meta = self.__engine__.sql(qry_meta).df()
+            elif self.__source__ == "ccdw":
+                df_meta = pd.read_sql(qry_meta, self.__engine__)
+            else:
+                # Raise error
+                df_meta = None
+            # cache table column types
 
-        if isinstance(cols, collections.abc.Mapping):
-            df_meta = df_meta.rename(cols)
+            if isinstance(cols, collections.abc.Mapping):
+                df_meta = df_meta.rename(cols)
 
-        df_types = df_meta[["COLUMN_NAME", "PYTHON_DATA_TYPE"]].to_dict()
+            df_types = df_meta[["COLUMN_NAME", "PYTHON_DATA_TYPE"]].to_dict()
 
         if self.__source__ == "ccdw":
             if self.__df_format__ == "pandas":
@@ -536,7 +535,7 @@ if __name__ == "__main__":
     testsource = "duckdb"
 
     ddb_conn_pl = ColleagueConnection(source=testsource, 
-                                      sourcepath="pycolleague/duckdb_test.db", 
+                                      sourcepath="duckdb_test.db", 
                                       format="polars",
                                       lazy=True)
     df = (
@@ -580,6 +579,21 @@ if __name__ == "__main__":
     testsource: str = "ccdw"
 
     ccdw_conn = ColleagueConnection(source=testsource)
+
+    analytics_where = "AND TABLE_NAME IN ('Term_CU','Date')"
+    tbls = ccdw_conn.get_data(
+        "TABLES", schema = "INFORMATION_SCHEMA", version="full",
+        cols = ["TABLE_SCHEMA","TABLE_NAME"],
+        where = f"""
+            TABLE_TYPE='BASE TABLE' 
+            AND TABLE_SCHEMA IN ('dw_dim','history','local','public','main')
+            /*AND TABLE_NAME = 'XCOURSE_SECTIONS'*/
+            {analytics_where}
+        """,
+        debug="query",
+    )
+    print(tbls)
+
     print(
         ccdw_conn.get_data(
             "Term_CU",

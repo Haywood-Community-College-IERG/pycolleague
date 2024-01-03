@@ -4,20 +4,16 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-sqlalchemy = "*"
-pyodbc = "*"
-pyyaml = "*"
-python-dotenv = "*"
-pandas = "*"
-pydantic = "*"
-pydantic-settings = "*"
-polars = {extras = ["pyarrow"], version = "*"}
-pyodbc = "*"
-python-dotenv = "*"
-pyyaml = "*"
-sqlalchemy = "*"
 connectorx = "*"
 duckdb = "0.9.2"
+pandas = "*"
+polars = {extras = ["pyarrow"], version = "*"}
+pydantic = "*"
+pydantic-settings = "*"
+pyodbc = "*"
+python-dotenv = "*"
+pyyaml = "*"
+sqlalchemy = "*"
 
 [dev-packages]
 bump-pydantic = "*"
