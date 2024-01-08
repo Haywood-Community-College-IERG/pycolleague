@@ -36,15 +36,15 @@ class ColleagueConnection(object):
     Connection to CCDW Data Warehouse built from Colleague data extraction.
     """
 
-    __source__: str = ""
-    __sourcepath__: Union(str,None) = ""
-    __config__: dict = {}
-    __config_schema_history__: str = ""
-    __conn_details__: str = ""
-    __engine__: Union(sqlalchemy.engine.base.Engine,ddb.DuckDBPyConnection) = None
-    __df_format__: str = ""
-    __lazy__: bool = False
-    __read_only__: bool = True
+    source: str = ""
+    sourcepath: Union(str,None) = ""
+    config: dict = {}
+    config__sql__schema_history: str = ""
+    conn_details: str = ""
+    engine: Union(sqlalchemy.engine.base.Engine,ddb.DuckDBPyConnection) = None
+    df_format: str = ""
+    lazy: bool = False
+    read_only: bool = True
 
     def __init__(
         self, 
@@ -79,103 +79,103 @@ class ColleagueConnection(object):
         """
 
         if format.lower() == "pandas":
-            self.__df_format__ = "pandas"
+            self.df_format = "pandas"
         elif format.lower() == "polars":
-            self.__df_format__ = "polars"
+            self.df_format = "polars"
         else:
             # Raise error
-            self.__df_format__ = "pandas"
+            self.df_format = "pandas"
 
-        if self.__df_format__ == "pandas":
-            self.__lazy__ = False
+        if self.df_format == "pandas":
+            self.lazy = False
         else:
-            self.__lazy__ = lazy    
+            self.lazy = lazy    
 
         if config:
-            self.__config__ = config.copy()
+            self.config = config.copy()
         else:
-            self.__config__ = Settings().model_dump()
+            self.config = Settings().model_dump()
 
         if source and source.lower() in ["ccdw", "datamart", "duckdb", "file"]:
-            self.__source__ = source.lower()
+            self.source = source.lower()
         elif (
-            "config" in self.__config__
-            and "source" in self.__config__["config"]
+            "config" in self.config
+            and "source" in self.config["config"]
         ):
-            self.__source__ = self.__config__["config"]["source"]
+            self.source = self.config["config"]["source"]
         else:
-            self.__source__ = "file"
+            self.source = "file"
 
-        if self.__source__ not in ["ccdw", "datamart", "duckdb", "file"]:
+        if self.source not in ["ccdw", "datamart", "duckdb", "file"]:
             # Raise error
-            self.__source__ = "file"
+            self.source = "file"
 
         if read_only:
-            self.__read_only__ = read_only
+            self.read_only = read_only
         elif (
-            self.__source__ == "duckdb"
-            and "duckdb" in self.__config__
-            and "read_only" in self.__config__["duckdb"]
+            self.source == "duckdb"
+            and "duckdb" in self.config
+            and "read_only" in self.config["duckdb"]
         ):
-            self.__read_only__ = self.__config__["duckdb"]["read_only"]
+            self.read_only = self.config["duckdb"]["read_only"]
         elif (
-            "config" in self.__config__
-            and "read_only" in self.__config__["config"]
+            "config" in self.config
+            and "read_only" in self.config["config"]
         ):
-            self.__read_only__ = self.__config__["config"]["read_only"]
+            self.read_only = self.config["config"]["read_only"]
         else:
-            self.__read_only__ = True        
+            self.read_only = True        
 
-        if self.__source__ == "ccdw":
-            self.__conn_details__ = urllib.parse.quote_plus(
-                f"DRIVER={{{self.__config__['sql']['driver']}}};"
-                f"SERVER={self.__config__['sql']['server']};"
-                f"DATABASE={self.__config__['sql']['db']};"
+        if self.source == "ccdw":
+            self.conn_details = urllib.parse.quote_plus(
+                f"DRIVER={{{self.config['sql']['driver']}}};"
+                f"SERVER={self.config['sql']['server']};"
+                f"DATABASE={self.config['sql']['db']};"
                 f"Trusted_Connection=Yes;"
                 f"Description=Python ColleagueConnection Class"
             )
-            if self.__df_format__ == "pandas":
-                self.__sourcepath__ = (
-                    f"mssql+pyodbc:///?odbc_connect={self.__conn_details__}"
+            if self.df_format == "pandas":
+                self.sourcepath = (
+                    f"mssql+pyodbc:///?odbc_connect={self.conn_details}"
                 )
-                self.__engine__ = sqlalchemy.create_engine(self.__sourcepath__)
+                self.engine = sqlalchemy.create_engine(self.sourcepath)
 
-            elif self.__df_format__ == "polars":
-                self.__sourcepath__ = f"mssql://{self.__config__['sql']['server']}:1433/{self.__config__['sql']['db']}?trusted_connection=true"
-                # self.__engine__ = sqlalchemy.create_engine(self.__sourcepath__)
+            elif self.df_format == "polars":
+                self.sourcepath = f"mssql://{self.config['sql']['server']}:1433/{self.config['sql']['db']}?trusted_connection=true"
+                # self.engine = sqlalchemy.create_engine(self.sourcepath)
                 # mssql://researchvm.haywood.edu:1433/CCDW_HIST?trusted_connection=true
 
-            self.__config_schema_history__ = self.__config__["sql"]["schema_history"]
+            self.config__sql__schema_history = self.config["sql"]["schema_history"]
 
-        elif self.__source__ == "datamart":
+        elif self.source == "datamart":
             if sourcepath:
-                self.__sourcepath__ = sourcepath
+                self.sourcepath = sourcepath
             elif (
-                "datamart" in self.__config__
-                and "rootfolder" in self.__config__["datamart"]
+                "datamart" in self.config
+                and "rootfolder" in self.config["datamart"]
             ):
-                self.__sourcepath__ = self.__config__["datamart"]["rootfolder"]
+                self.sourcepath = self.config["datamart"]["rootfolder"]
             elif (
-                "pycolleague" in self.__config__
-                and "sourcepath" in self.__config__["pycolleague"]
+                "pycolleague" in self.config
+                and "sourcepath" in self.config["pycolleague"]
             ):
-                self.__sourcepath__ = self.__config__["pycolleague"]["sourcepath"]
+                self.sourcepath = self.config["pycolleague"]["sourcepath"]
             else:
-                self.__sourcepath__ = ""
+                self.sourcepath = ""
 
-        elif self.__source__ == "duckdb":
+        elif self.source == "duckdb":
             if sourcepath:
-                self.__sourcepath__ = sourcepath
+                self.sourcepath = sourcepath
             elif (
-                "duckdb" in self.__config__
-                and "path" in self.__config__["duckdb"]
+                "duckdb" in self.config
+                and "path" in self.config["duckdb"]
             ):
-                self.__sourcepath__ = self.__config__["duckdb"]["path"]
+                self.sourcepath = self.config["duckdb"]["path"]
             else:
-                self.__sourcepath__ = None
+                self.sourcepath = None
 
-            if self.__sourcepath__:
-                self.__engine__ = ddb.connect(database=self.__sourcepath__, read_only=self.__read_only__)
+            if self.sourcepath:
+                self.engine = ddb.connect(database=self.sourcepath, read_only=self.read_only)
             else:
                 # ERROR
 
@@ -183,14 +183,14 @@ class ColleagueConnection(object):
 
         else:
             if sourcepath:
-                self.__sourcepath__ = sourcepath
+                self.sourcepath = sourcepath
             elif (
-                "pycolleague" in self.__config__
-                and "sourcepath" in self.__config__["pycolleague"]
+                "pycolleague" in self.config
+                and "sourcepath" in self.config["pycolleague"]
             ):
-                self.__sourcepath__ = self.__config__["pycolleague"]["sourcepath"]
+                self.sourcepath = self.config["pycolleague"]["sourcepath"]
             else:
-                self.__sourcepath__ = "."
+                self.sourcepath = "."
 
     def __get_data_ccdw__(
         self,
@@ -260,7 +260,7 @@ class ColleagueConnection(object):
         else:
             qry_where = ""
 
-        if version == "current" and schema == self.__config_schema_history__:
+        if version == "current" and schema == self.config__sql__schema_history:
             qry_where = "WHERE " if where == "" else qry_where + " AND "
             qry_where += f"CurrentFlag='Y'"
 
@@ -270,7 +270,7 @@ class ColleagueConnection(object):
             print(qry)
 
         if schema.upper() != "INFORMATION_SCHEMA":
-            if self.__source__ == "duckdb":
+            if self.source == "duckdb":
                 qry_meta = f"""
                     SELECT COLUMN_NAME AS "COLUMN_NAME"
                         , DATA_TYPE AS "DATA_TYPE"
@@ -304,35 +304,36 @@ class ColleagueConnection(object):
                     {qry_meta_where_cols}
                     """
                 
-            if self.__source__ == "duckdb":
-                df_meta = self.__engine__.sql(qry_meta).df()
-            elif self.__source__ == "ccdw":
-                df_meta = pd.read_sql(qry_meta, self.__engine__)
-            else:
-                # Raise error
-                df_meta = None
+            # if self.source == "duckdb":
+            #     df_meta = self.engine.sql(qry_meta).df()
+            # elif self.source == "ccdw":
+                # Check for polars
+            #     df_meta = pd.read_sql(qry_meta, self.engine)
+            # else:
+            #     # Raise error
+            #     df_meta = None
             # cache table column types
 
-            if isinstance(cols, collections.abc.Mapping):
-                df_meta = df_meta.rename(cols)
+            # if isinstance(cols, collections.abc.Mapping):
+            #     df_meta = df_meta.rename(cols)
 
-            df_types = df_meta[["COLUMN_NAME", "PYTHON_DATA_TYPE"]].to_dict()
+            # df_types = df_meta[["COLUMN_NAME", "PYTHON_DATA_TYPE"]].to_dict()
 
-        if self.__source__ == "ccdw":
-            if self.__df_format__ == "pandas":
-                df = pd.read_sql(qry, self.__engine__)  # , index_col = index_col)
-            elif self.__df_format__ == "polars":
-                df = pl.read_database_uri(qry, self.__sourcepath__) # , index_col = index_col)
-        elif self.__source__ == "duckdb":
-            if self.__df_format__ == "pandas":
-                df = self.__engine__.sql(qry).df()
-            elif self.__df_format__ == "polars":
-                df = self.__engine__.sql(qry).pl()
+        if self.source == "ccdw":
+            if self.df_format == "pandas":
+                df = pd.read_sql(qry, self.engine)  # , index_col = index_col)
+            elif self.df_format == "polars":
+                df = pl.read_database_uri(qry, self.sourcepath) # , index_col = index_col)
+        elif self.source == "duckdb":
+            if self.df_format == "pandas":
+                df = self.engine.sql(qry).df()
+            elif self.df_format == "polars":
+                df = self.engine.sql(qry).pl()
         else:
             # Raise error
             df = None
 
-        if self.__lazy__:
+        if self.lazy:
             df = df.lazy()
             # Need to apply the schema to the lazy frame
             #df = df.with_column_types(df_types["PYTHON_DATA_TYPE"])
@@ -380,7 +381,7 @@ class ColleagueConnection(object):
             qry_cols = "*" if cols == [] else cols
             qry_cols_equiv = "*" if cols == [] else ", ".join([f"[{c}]" for c in cols])
 
-        colleaguefile_pattern = Path(self.__sourcepath__) / f"{colleaguefile}*.csv"
+        colleaguefile_pattern = Path(self.sourcepath) / f"{colleaguefile}*.csv"
 
         qry_where = where
 
@@ -424,7 +425,7 @@ class ColleagueConnection(object):
         return df
 
     def get_config(self):
-        return self.__config__
+        return self.config
 
     def get_data(
         self,
@@ -460,7 +461,7 @@ class ColleagueConnection(object):
                                     query: print out the generated query
         """
         sql_sources = ("ccdw", "duckdb")
-        if self.__source__ in sql_sources:
+        if self.source in sql_sources:
             df = self.__get_data_ccdw__(
                 colleaguefile,
                 cols=cols,
@@ -469,9 +470,9 @@ class ColleagueConnection(object):
                 version=version,
                 debug=debug,
             )
-        # elif self.__source__ == "datamart":
+        # elif self.source == "datamart":
         #     df = self.__get_data_datamart__(colleaguefile, cols, where, debug)
-        elif self.__source__ == "file":
+        elif self.source == "file":
             df = self.__get_data_file__(
                 colleaguefile, cols=cols, where=where, debug=debug
             )
@@ -500,32 +501,32 @@ class ColleagueConnection(object):
 
         # TODO: Validate sql_code to ensure it is valid SQL code.
 
-        if self.__source__ == "ccdw":
-            if self.__df_format__ == "pandas":
-                df = pd.read_sql(sql_code, self.__engine__)  # , index_col = index_col)
-            elif self.__df_format__ == "polars":
-                df = pl.read_database_uri(sql_code, self.__sourcepath__) # , index_col = index_col)
-        elif self.__source__ == "duckdb":
-            if self.__df_format__ == "pandas":
-                df = self.__engine__.sql(sql_code).df()
-            elif self.__df_format__ == "polars":
-                df = self.__engine__.sql(sql_code).pl()
+        if self.source == "ccdw":
+            if self.df_format == "pandas":
+                df = pd.read_sql(sql_code, self.engine)  # , index_col = index_col)
+            elif self.df_format == "polars":
+                df = pl.read_database_uri(sql_code, self.sourcepath) # , index_col = index_col)
+        elif self.source == "duckdb":
+            if self.df_format == "pandas":
+                df = self.engine.sql(sql_code).df()
+            elif self.df_format == "polars":
+                df = self.engine.sql(sql_code).pl()
         else:
             # Raise error
             df = None
 
-        if self.__lazy__:
+        if self.lazy:
             df = df.lazy()
 
         return df 
 
     def School_ID(self):
         """Return the school's InstID from the config file."""
-        return self.__config__["school"]["instid"]
+        return self.config["school"]["instid"]
 
     def School_IPEDS(self):
         """Return the school's IPEDS ID from the config file."""
-        return self.__config__["school"]["ipeds"]
+        return self.config["school"]["ipeds"]
 
 
 # For testing purposes only
@@ -682,5 +683,10 @@ if __name__ == "__main__":
     print(df.explain)
     df2 = df.collect()
     print(df2)
+
+    print(f"ddb_conn_pl: source={ddb_conn_pl.source}, sourcepath={ddb_conn_pl.sourcepath}, df_format={ddb_conn_pl.df_format}, lazy={ddb_conn_pl.lazy}")
+    print(f"ccdw_conn: source={ccdw_conn.source}, sourcepath={ccdw_conn.sourcepath}, df_format={ccdw_conn.df_format}, lazy={ccdw_conn.lazy}")
+    print(f"ccdw_conn_pl: source={ccdw_conn_pl.source}, sourcepath={ccdw_conn_pl.sourcepath}, df_format={ccdw_conn_pl.df_format}, lazy={ccdw_conn_pl.lazy}")
+    print(f"ccdw_conn_pll: source={ccdw_conn_pll.source}, sourcepath={ccdw_conn_pll.sourcepath}, df_format={ccdw_conn_pll.df_format}, lazy={ccdw_conn_pll.lazy}")
 
     print("done")
