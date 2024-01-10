@@ -214,26 +214,27 @@ class ColleagueConnection(object):
             qry_where_base = where
 
             # Convert all double-quotes (") to single-quotes (')
-            qry_where_base = qry_where_base.replace('"', "'")
+            #qry_where_base = qry_where_base.replace('"', "'")
 
             # Convert VAR IN ['ITEM1','ITEM2'] into VAR IN ('ITEM1','ITEM2'),
             #     or VAR NOT IN ['ITEM1','ITEM2'] into VAR NOT IN ('ITEM1','ITEM2')
-            for f in re.findall(
+            for fnd in re.findall(
                 r"\s+(?:not\s+)?in\s+\[([^]]+)\]", qry_where_base, re.IGNORECASE
             ):
-                qry_where_base = qry_where_base.replace(f"[{f}]", f"({f})")
+                qry_where_base = qry_where_base.replace(f"[{fnd}]", f"({fnd})")
 
             # Convert ['ITEM1'] into 'ITEM1'
-            for f in re.findall(r"\[('.*?')\]", qry_where_base):
-                qry_where_base = qry_where_base.replace(f"[{f}]", f"{f}")
+            for fnd in re.findall(r"\[('.*?')\]", qry_where_base):
+                qry_where_base = qry_where_base.replace(f"[{fnd}]", f"{fnd}")
 
             # Find any VAR.NAME type variables but also find [VAR.NAME].
             # Convert VAR.NAME and [VAR.NAME] into "VAR.NAME".
-            for f in re.findall(r"(\[?\w*\.[\w\.]+\]?)", qry_where_base):
+            # This will leave "VAR.NAME" alone.
+            for fnd in re.findall(r"((?<!\")\[?\b[A-Za-z]+\.[A-Za-z\.]+\b\]?(?!\"))", qry_where_base):
                 qry_where_base = (
-                    f'"{qry_where_base[1:-1]}"'
-                    if f[0] == "["
-                    else qry_where_base.replace(f, f'"{f}"')
+                    qry_where_base.replace(fnd, f'"{fnd[1:-1]}"')
+                    if fnd[0] == "["
+                    else qry_where_base.replace(fnd, f'"{fnd}"')
                 )
 
                 # qry_where_base = (
@@ -243,11 +244,11 @@ class ColleagueConnection(object):
                 # )
 
             # Convert [VARNAME] into "VARNAME".
-            for f in re.findall(r"(\[\w*\])", qry_where_base):
+            for fnd in re.findall(r"(\[\w*\])", qry_where_base):
                 qry_where_base = (
-                    qry_where_base.replace(f, f'"{f[1:-1]}"')
-                    if f[0] == "["
-                    else qry_where_base.replace(f, f'"{f}"')
+                    qry_where_base.replace(fnd, f'"{fnd[1:-1]}"')
+                    if fnd[0] == "["
+                    else qry_where_base.replace(fnd, f'"{fnd}"')
                 )
 
             # Convert remaining == to =
@@ -586,8 +587,8 @@ if __name__ == "__main__":
         "TABLES", schema = "INFORMATION_SCHEMA", version="full",
         cols = ["TABLE_SCHEMA","TABLE_NAME"],
         where = f"""
-            TABLE_TYPE='BASE TABLE' 
-            AND TABLE_SCHEMA IN ('dw_dim','history','local','public','main')
+            "TABLE_TYPE"='BASE TABLE' 
+            AND [TABLE_SCHEMA] IN ('dw_dim','history','local','public','main')
             /*AND TABLE_NAME = 'XCOURSE_SECTIONS'*/
             {analytics_where}
         """,
@@ -595,6 +596,20 @@ if __name__ == "__main__":
     )
     print(tbls)
 
+    print(
+        ccdw_conn.get_data(
+            "ACAD_PROGRAMS",
+            cols=[
+                "ACAD.PROGRAMS.ID",
+                "ACPG.ACAD.LEVEL",
+            ],
+            where="""
+                [ACAD.PROGRAMS.ID] IN ['A10100','A10100EC']
+                AND "ACPG.ACAD.LEVEL" IN ['CU']
+            """,
+            debug="query",
+        )
+    )
     print(
         ccdw_conn.get_data(
             "Term_CU",
