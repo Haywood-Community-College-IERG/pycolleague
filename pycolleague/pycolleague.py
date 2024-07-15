@@ -577,7 +577,7 @@ if __name__ == "__main__":
 
     ccdw_conn = ColleagueConnection(source=testsource)
 
-    analytics_where = "AND TABLE_NAME IN ('Term_CU','Date')"
+    analytics_where = "AND TABLE_NAME IN ('Term_CU','Dates')"
     tbls = ccdw_conn.get_data(
         "TABLES",
         schema="INFORMATION_SCHEMA",
