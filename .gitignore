@@ -128,3 +128,4 @@ dmypy.json
 .pyre/
 config.yml
 duckdb_test.db
+pycolleague.code-workspace
