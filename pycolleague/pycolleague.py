@@ -7,12 +7,10 @@ import urllib
 from pathlib import Path
 from typing import Union
 
+import duckdb as ddb
 import pandas as pd
 import polars as pl
-import duckdb as ddb
-
 import sqlalchemy
-
 
 if __name__ == "__main__":
     # Use this form when used locally.
@@ -37,20 +35,20 @@ class ColleagueConnection(object):
     """
 
     source: str = ""
-    sourcepath: Union(str,None) = ""
+    sourcepath: Union(str, None) = ""
     config: dict = {}
     config__sql__schema_history: str = ""
     conn_details: str = ""
-    engine: Union(sqlalchemy.engine.base.Engine,ddb.DuckDBPyConnection) = None
+    engine: Union(sqlalchemy.engine.base.Engine, ddb.DuckDBPyConnection) = None
     df_format: str = ""
     lazy: bool = False
     read_only: bool = True
 
     def __init__(
-        self, 
+        self,
         *,
-        source: str = "", 
-        sourcepath: str = "", 
+        source: str = "",
+        sourcepath: str = "",
         format: str = "pandas",
         lazy: bool = False,
         config: dict = None,
@@ -61,20 +59,20 @@ class ColleagueConnection(object):
 
         Parameters:
             source (string):        Specify source of data. Can be ccdw, datamart, duckdb, or file.
-            sourcepath (string):    Default="". Specify the path to the data source. For ccdw, this is 
-                                    blank. For datamart, this is the root folder for the datamart. 
+            sourcepath (string):    Default="". Specify the path to the data source. For ccdw, this is
+                                    blank. For datamart, this is the root folder for the datamart.
                                     For file, this is the path to the folder containing the files. For
                                     duckdb, this is the path to the duckdb file. This can also be specified
                                     in the config file under config:location_duckdb.
             format (string):        Default="pandas". Specify the format of the output. This can be
                                     pandas or polars. If pandas, the output will be a pandas DataFrame.
-                                    If polars, the output will be a polars DataFrame. 
-            lazy (bool):            Default=False. Specify whether to load the data lazily or not. If True, 
+                                    If polars, the output will be a polars DataFrame.
+            lazy (bool):            Default=False. Specify whether to load the data lazily or not. If True,
                                     the data will not be loaded until the user requests it. If False, the
                                     data will be loaded immediately.
             config (dictionary):    Default=None. Pass in the config file or the constructor will load the
                                     config file itself.
-            read_only (bool):       Default=True. Specify whether the connection is read-only or not. If True,  
+            read_only (bool):       Default=True. Specify whether the connection is read-only or not. If True,
                                     the connection will be read-only. If False, the connection will be read-write.
         """
 
@@ -89,7 +87,7 @@ class ColleagueConnection(object):
         if self.df_format == "pandas":
             self.lazy = False
         else:
-            self.lazy = lazy    
+            self.lazy = lazy
 
         if config:
             self.config = config.copy()
@@ -98,10 +96,7 @@ class ColleagueConnection(object):
 
         if source and source.lower() in ["ccdw", "datamart", "duckdb", "file"]:
             self.source = source.lower()
-        elif (
-            "config" in self.config
-            and "source" in self.config["config"]
-        ):
+        elif "config" in self.config and "source" in self.config["config"]:
             self.source = self.config["config"]["source"]
         else:
             self.source = "file"
@@ -118,13 +113,10 @@ class ColleagueConnection(object):
             and "read_only" in self.config["duckdb"]
         ):
             self.read_only = self.config["duckdb"]["read_only"]
-        elif (
-            "config" in self.config
-            and "read_only" in self.config["config"]
-        ):
+        elif "config" in self.config and "read_only" in self.config["config"]:
             self.read_only = self.config["config"]["read_only"]
         else:
-            self.read_only = True        
+            self.read_only = True
 
         if self.source == "ccdw":
             self.conn_details = urllib.parse.quote_plus(
@@ -135,9 +127,7 @@ class ColleagueConnection(object):
                 f"Description=Python ColleagueConnection Class"
             )
             if self.df_format == "pandas":
-                self.sourcepath = (
-                    f"mssql+pyodbc:///?odbc_connect={self.conn_details}"
-                )
+                self.sourcepath = f"mssql+pyodbc:///?odbc_connect={self.conn_details}"
                 self.engine = sqlalchemy.create_engine(self.sourcepath)
 
             elif self.df_format == "polars":
@@ -150,10 +140,7 @@ class ColleagueConnection(object):
         elif self.source == "datamart":
             if sourcepath:
                 self.sourcepath = sourcepath
-            elif (
-                "datamart" in self.config
-                and "rootfolder" in self.config["datamart"]
-            ):
+            elif "datamart" in self.config and "rootfolder" in self.config["datamart"]:
                 self.sourcepath = self.config["datamart"]["rootfolder"]
             elif (
                 "pycolleague" in self.config
@@ -166,16 +153,15 @@ class ColleagueConnection(object):
         elif self.source == "duckdb":
             if sourcepath:
                 self.sourcepath = sourcepath
-            elif (
-                "duckdb" in self.config
-                and "path" in self.config["duckdb"]
-            ):
+            elif "duckdb" in self.config and "path" in self.config["duckdb"]:
                 self.sourcepath = self.config["duckdb"]["path"]
             else:
                 self.sourcepath = None
 
             if self.sourcepath:
-                self.engine = ddb.connect(database=self.sourcepath, read_only=self.read_only)
+                self.engine = ddb.connect(
+                    database=self.sourcepath, read_only=self.read_only
+                )
             else:
                 # ERROR
 
@@ -197,24 +183,30 @@ class ColleagueConnection(object):
         colleaguefile: str,
         cols: Union[dict, list] = [],
         where: str = "",
-        schema: str = "history",
+        schema: str = "",
         version: str = "current",
         index_col: bool = False,
-        #format: str = "pandas",
+        # format: str = "pandas",
         debug: str = "",
     ) -> (pd.DataFrame, pl.DataFrame, pl.LazyFrame):
         if isinstance(cols, collections.abc.Mapping):
-            qry_cols = "*" if cols == [] else ", ".join([f'"{c}" AS "{cols[c]}"' for c in cols])
+            qry_cols = (
+                "*"
+                if cols == []
+                else ", ".join([f'"{c}" AS "{cols[c]}"' for c in cols])
+            )
 
         else:
             qry_cols = "*" if cols == [] else ", ".join([f'"{c}"' for c in cols])
-        qry_meta_where_cols = "AND COLUMN_NAME IN (" + ', '.join([f"'{c}'" for c in cols]) + ')'
+        qry_meta_where_cols = (
+            "AND COLUMN_NAME IN (" + ", ".join([f"'{c}'" for c in cols]) + ")"
+        )
 
         if where != "":
             qry_where_base = where
 
             # Convert all double-quotes (") to single-quotes (')
-            #qry_where_base = qry_where_base.replace('"', "'")
+            # qry_where_base = qry_where_base.replace('"', "'")
 
             # Convert VAR IN ['ITEM1','ITEM2'] into VAR IN ('ITEM1','ITEM2'),
             #     or VAR NOT IN ['ITEM1','ITEM2'] into VAR NOT IN ('ITEM1','ITEM2')
@@ -230,7 +222,9 @@ class ColleagueConnection(object):
             # Find any VAR.NAME type variables but also find [VAR.NAME].
             # Convert VAR.NAME and [VAR.NAME] into "VAR.NAME".
             # This will leave "VAR.NAME" alone.
-            for fnd in re.findall(r"((?<!\")\[?\b[A-Za-z]+\.[A-Za-z\.]+\b\]?(?!\"))", qry_where_base):
+            for fnd in re.findall(
+                r"((?<!\")\[?\b[A-Za-z]+\.[A-Za-z\.]+\b\]?(?!\"))", qry_where_base
+            ):
                 qry_where_base = (
                     qry_where_base.replace(fnd, f'"{fnd[1:-1]}"')
                     if fnd[0] == "["
@@ -260,6 +254,9 @@ class ColleagueConnection(object):
             qry_where = "" if where == "" else f"WHERE {qry_where_base}"
         else:
             qry_where = ""
+
+        if schema == "":
+            schema = self.config__sql__schema_history
 
         if version == "current" and schema == self.config__sql__schema_history:
             qry_where = "WHERE " if where == "" else qry_where + " AND "
@@ -304,11 +301,11 @@ class ColleagueConnection(object):
                     AND TABLE_NAME = '{colleaguefile}'
                     {qry_meta_where_cols}
                     """
-                
+
             # if self.source == "duckdb":
             #     df_meta = self.engine.sql(qry_meta).df()
             # elif self.source == "ccdw":
-                # Check for polars
+            # Check for polars
             #     df_meta = pd.read_sql(qry_meta, self.engine)
             # else:
             #     # Raise error
@@ -324,7 +321,9 @@ class ColleagueConnection(object):
             if self.df_format == "pandas":
                 df = pd.read_sql(qry, self.engine)  # , index_col = index_col)
             elif self.df_format == "polars":
-                df = pl.read_database_uri(qry, self.sourcepath) # , index_col = index_col)
+                df = pl.read_database_uri(
+                    qry, self.sourcepath
+                )  # , index_col = index_col)
         elif self.source == "duckdb":
             if self.df_format == "pandas":
                 df = self.engine.sql(qry).df()
@@ -337,7 +336,7 @@ class ColleagueConnection(object):
         if self.lazy:
             df = df.lazy()
             # Need to apply the schema to the lazy frame
-            #df = df.with_column_types(df_types["PYTHON_DATA_TYPE"])
+            # df = df.with_column_types(df_types["PYTHON_DATA_TYPE"])
 
         return df
 
@@ -388,7 +387,6 @@ class ColleagueConnection(object):
 
         df = pd.DataFrame()
         for file in glob.glob(colleaguefile_pattern.__str__()):
-
             fdf = pd.read_csv(
                 file,
                 encoding="ansi",
@@ -506,7 +504,9 @@ class ColleagueConnection(object):
             if self.df_format == "pandas":
                 df = pd.read_sql(sql_code, self.engine)  # , index_col = index_col)
             elif self.df_format == "polars":
-                df = pl.read_database_uri(sql_code, self.sourcepath) # , index_col = index_col)
+                df = pl.read_database_uri(
+                    sql_code, self.sourcepath
+                )  # , index_col = index_col)
         elif self.source == "duckdb":
             if self.df_format == "pandas":
                 df = self.engine.sql(sql_code).df()
@@ -519,7 +519,7 @@ class ColleagueConnection(object):
         if self.lazy:
             df = df.lazy()
 
-        return df 
+        return df
 
     def School_ID(self):
         """Return the school's InstID from the config file."""
@@ -536,43 +536,38 @@ if __name__ == "__main__":
 
     testsource = "duckdb"
 
-    ddb_conn_pl = ColleagueConnection(source=testsource, 
-                                      sourcepath="duckdb_test.db", 
-                                      format="polars",
-                                      lazy=True)
-    df = (
-        ddb_conn_pl.get_data(
-            "Term_CU",
-            schema="dw_dim",
-            cols=[
-                "Term_ID",
-                "Academic_Year",
-                "Reporting_Year",
-                "Term_Start_Date",
-                "Term_End_Date",
-            ],
-            where=f"[Term_ID] IN {report_terms}",
-            debug="query",
-        )
+    ddb_conn_pl = ColleagueConnection(
+        source=testsource, sourcepath="duckdb_test.db", format="polars", lazy=True
+    )
+    df = ddb_conn_pl.get_data(
+        "Term_CU",
+        schema="dw_dim",
+        cols=[
+            "Term_ID",
+            "Academic_Year",
+            "Reporting_Year",
+            "Term_Start_Date",
+            "Term_End_Date",
+        ],
+        where=f"[Term_ID] IN {report_terms}",
+        debug="query",
     )
     print(df.explain)
     df2 = df.collect()
     print(df2)
 
-    df = (
-        ddb_conn_pl.get_data(
-            "Term_CU",
-            schema="dw_dim",
-            cols={
-                "Term_ID" : "Term",
-                "Academic_Year" : "AY",
-                "Reporting_Year" : "RY",
-                "Term_Start_Date" : "Start",
-                "Term_End_Date" : "End",
-            },
-            where=f"[Term_ID] IN {report_terms}",
-            debug="query",
-        )
+    df = ddb_conn_pl.get_data(
+        "Term_CU",
+        schema="dw_dim",
+        cols={
+            "Term_ID": "Term",
+            "Academic_Year": "AY",
+            "Reporting_Year": "RY",
+            "Term_Start_Date": "Start",
+            "Term_End_Date": "End",
+        },
+        where=f"[Term_ID] IN {report_terms}",
+        debug="query",
     )
     print(df.explain)
     df2 = df.collect()
@@ -584,9 +579,11 @@ if __name__ == "__main__":
 
     analytics_where = "AND TABLE_NAME IN ('Term_CU','Date')"
     tbls = ccdw_conn.get_data(
-        "TABLES", schema = "INFORMATION_SCHEMA", version="full",
-        cols = ["TABLE_SCHEMA","TABLE_NAME"],
-        where = f"""
+        "TABLES",
+        schema="INFORMATION_SCHEMA",
+        version="full",
+        cols=["TABLE_SCHEMA", "TABLE_NAME"],
+        where=f"""
             "TABLE_TYPE"='BASE TABLE' 
             AND [TABLE_SCHEMA] IN ('dw_dim','history','local','public','main')
             /*AND TABLE_NAME = 'XCOURSE_SECTIONS'*/
@@ -659,7 +656,6 @@ if __name__ == "__main__":
         )
     )
 
-
     ccdw_conn_pl = ColleagueConnection(source=testsource, format="polars")
     print(
         ccdw_conn_pl.get_data(
@@ -679,29 +675,35 @@ if __name__ == "__main__":
     )
 
     ccdw_conn_pll = ColleagueConnection(source=testsource, format="polars", lazy=True)
-    df = (
-        ccdw_conn_pll.get_data(
-            "Term_CU",
-            schema="dw_dim",
-            #                version="all",
-            cols=[
-                "Term_ID",
-                "Academic_Year",
-                "Reporting_Year",
-                "Term_Start_Date",
-                "Term_End_Date",
-            ],
-            where=f"[Term_ID] IN {report_terms}",
-            debug="query",
-        )
+    df = ccdw_conn_pll.get_data(
+        "Term_CU",
+        schema="dw_dim",
+        #                version="all",
+        cols=[
+            "Term_ID",
+            "Academic_Year",
+            "Reporting_Year",
+            "Term_Start_Date",
+            "Term_End_Date",
+        ],
+        where=f"[Term_ID] IN {report_terms}",
+        debug="query",
     )
     print(df.explain)
     df2 = df.collect()
     print(df2)
 
-    print(f"ddb_conn_pl: source={ddb_conn_pl.source}, sourcepath={ddb_conn_pl.sourcepath}, df_format={ddb_conn_pl.df_format}, lazy={ddb_conn_pl.lazy}")
-    print(f"ccdw_conn: source={ccdw_conn.source}, sourcepath={ccdw_conn.sourcepath}, df_format={ccdw_conn.df_format}, lazy={ccdw_conn.lazy}")
-    print(f"ccdw_conn_pl: source={ccdw_conn_pl.source}, sourcepath={ccdw_conn_pl.sourcepath}, df_format={ccdw_conn_pl.df_format}, lazy={ccdw_conn_pl.lazy}")
-    print(f"ccdw_conn_pll: source={ccdw_conn_pll.source}, sourcepath={ccdw_conn_pll.sourcepath}, df_format={ccdw_conn_pll.df_format}, lazy={ccdw_conn_pll.lazy}")
+    print(
+        f"ddb_conn_pl: source={ddb_conn_pl.source}, sourcepath={ddb_conn_pl.sourcepath}, df_format={ddb_conn_pl.df_format}, lazy={ddb_conn_pl.lazy}"
+    )
+    print(
+        f"ccdw_conn: source={ccdw_conn.source}, sourcepath={ccdw_conn.sourcepath}, df_format={ccdw_conn.df_format}, lazy={ccdw_conn.lazy}"
+    )
+    print(
+        f"ccdw_conn_pl: source={ccdw_conn_pl.source}, sourcepath={ccdw_conn_pl.sourcepath}, df_format={ccdw_conn_pl.df_format}, lazy={ccdw_conn_pl.lazy}"
+    )
+    print(
+        f"ccdw_conn_pll: source={ccdw_conn_pll.source}, sourcepath={ccdw_conn_pll.sourcepath}, df_format={ccdw_conn_pll.df_format}, lazy={ccdw_conn_pll.lazy}"
+    )
 
     print("done")
